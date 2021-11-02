@@ -143,8 +143,8 @@ void initGL()
 	///////////////////////////////////////////////////////////////////////////
 
 	// See OpenGL spec §2.20 http://www.cse.chalmers.se/edu/course/TDA361/glspec30.20080923.pdf#page=104&zoom=75
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);	// vertexShader created with glCreateShader
+	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER); // fragmentShader created with glCreateShader
 
 	// Load text files for vertex and fragment shaders.
 	std::ifstream vs_file("../lab1-rasterization/simple.vert");
