@@ -58,6 +58,7 @@ vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
 vec3 cameraPosition(15.0f, 15.0f, 15.0f);
 vec3 cameraDirection(-1.0f, -1.0f, -1.0f);
 mat4 T(1.0f), R(1.0f);
+mat4 T2(1.0f), R2(1.0f);	// Task 3
 
 void loadModels()
 {
@@ -107,11 +108,23 @@ void display()
 	// Set up the view matrix
 	// The view matrix defines where the viewer is looking
 	// Initially fixed, but will be replaced in the tutorial.
+	/*
 	mat4 constantViewMatrix = mat4(0.707106769f, -0.408248276f, 1.00000000f, 0.000000000f, 0.000000000f,
 		0.816496551f, 1.00000000f, 0.000000000f, -0.707106769f, -0.408248276f,
 		1.00000000f, 0.000000000f, 0.000000000f, 0.000000000f, -30.0000000f,
 		1.00000000f);
 	mat4 viewMatrix = constantViewMatrix;
+	*/
+
+	// use camera direction as -z axis and compute the x (cameraRight) and y (cameraUp) base vectors
+	vec3 cameraRight = normalize(cross(cameraDirection, worldUp));
+	vec3 cameraUp = normalize(cross(cameraRight, cameraDirection));
+
+	mat3 cameraBaseVectorsWorldSpace(cameraRight, cameraUp, -cameraDirection);
+
+	mat4 cameraRotation = mat4(transpose(cameraBaseVectorsWorldSpace));
+	mat4 viewMatrix = cameraRotation * translate(-cameraPosition);
+
 
 	// Setup the projection matrix
 	if (w != old_w || h != old_h)
@@ -191,6 +204,24 @@ void display()
 	modelViewProjectionMatrix = projectionMatrix * viewMatrix * carModelMatrix;
 	glUniformMatrix4fv(loc, 1, false, &modelViewProjectionMatrix[0].x);
 	render(carModel);
+
+	/////////////////////////////////////////////////////////////////////////
+	////////////////////////////////Task 3///////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////
+
+	R2 = rotate(rotateSpeed * currentTime, vec3(0.0f, 1.0f, 0.0f));
+	T2 = translate(5.0f * vec3(-1.0f, 0.0f, 0.0f));
+
+	carModelMatrix = R2 * T2;
+
+	// car
+	modelViewProjectionMatrix = projectionMatrix * viewMatrix * carModelMatrix;
+	glUniformMatrix4fv(loc, 1, false, &modelViewProjectionMatrix[0].x);
+	render(carModel);
+
+	/////////////////////////////////////////////////////////////////////////
+	///////////////////////////////END TASK 3////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////
 
 
 	glUseProgram(0);
@@ -273,34 +304,34 @@ int main(int argc, char* argv[])
 			{
 				showUI = !showUI;
 			}
-			else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT
-				&& (!showUI || !ImGui::GetIO().WantCaptureMouse))
-			{
-				g_isMouseDragging = true;
-				int x;
-				int y;
-				SDL_GetMouseState(&x, &y);
-				g_prevMouseCoords.x = x;
-				g_prevMouseCoords.y = y;
-			}
+			/////////////////////////////////////////////////////////////////////////
+			////////////////////////////////Task 4///////////////////////////////////
+			/////////////////////////////////////////////////////////////////////////
+			const float delta_x = 0.1f;
+			const float delta_y = 0.1f;
+			const float cameraCoeff = 0.01f;
 
-			if (!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT)))
-			{
-				g_isMouseDragging = false;
-			}
+			// check keyboard state (which keys are still pressed)
+			const uint8_t* state = SDL_GetKeyboardState(nullptr);
 
-			if (event.type == SDL_MOUSEMOTION && g_isMouseDragging)
-			{
-				// More info at https://wiki.libsdl.org/SDL_MouseMotionEvent
-				int delta_x = event.motion.x - g_prevMouseCoords.x;
-				int delta_y = event.motion.y - g_prevMouseCoords.y;
-				if (event.button.button == SDL_BUTTON_LEFT)
+			if (event.button.button & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+				float rotationSpeed = 0.005f;
+				mat4 yaw = rotate(rotationSpeed * -delta_x, worldUp);
+				mat4 pitch = rotate(rotationSpeed * -delta_y, normalize(cross(cameraDirection, worldUp)));
+				cameraDirection = vec3(pitch * yaw * vec4(cameraDirection, 0.0f));
+
+				if (state[SDL_SCANCODE_W])
 				{
-					printf("Mouse motion while left button down (%i, %i)\n", event.motion.x, event.motion.y);
+					cameraPosition += cameraCoeff * cameraDirection;
 				}
-				g_prevMouseCoords.x = event.motion.x;
-				g_prevMouseCoords.y = event.motion.y;
+				else if (state[SDL_SCANCODE_S])
+				{
+					cameraPosition -= cameraCoeff * cameraDirection;
+				}
 			}
+			/////////////////////////////////////////////////////////////////////////
+			///////////////////////////////END TASK 4////////////////////////////////
+			/////////////////////////////////////////////////////////////////////////
 		}
 
 		// check keyboard state (which keys are still pressed)
