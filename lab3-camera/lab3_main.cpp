@@ -51,6 +51,7 @@ Model* cityModel = nullptr;
 Model* carModel = nullptr;
 Model* groundModel = nullptr;
 mat4 carModelMatrix(1.0f);
+mat4 carModelMatrix2(1.0f);
 
 vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
 
@@ -124,6 +125,7 @@ void display()
 
 	mat4 cameraRotation = mat4(transpose(cameraBaseVectorsWorldSpace));
 	mat4 viewMatrix = cameraRotation * translate(-cameraPosition);
+	//mat4 viewMatrix = carModelMatrix * translate(-cameraPosition);
 
 
 	// Setup the projection matrix
@@ -146,7 +148,7 @@ void display()
 
 	// Ground
 	// Task 5: Uncomment this
-	//drawGround(modelViewProjectionMatrix);
+	drawGround(modelViewProjectionMatrix);
 
 	// check keyboard state (which keys are still pressed)
 	const uint8_t* state = SDL_GetKeyboardState(nullptr);
@@ -212,10 +214,10 @@ void display()
 	R2 = rotate(rotateSpeed * currentTime, vec3(0.0f, 1.0f, 0.0f));
 	T2 = translate(5.0f * vec3(-1.0f, 0.0f, 0.0f));
 
-	carModelMatrix = R2 * T2;
+	carModelMatrix2 = R2 * T2;
 
 	// car
-	modelViewProjectionMatrix = projectionMatrix * viewMatrix * carModelMatrix;
+	modelViewProjectionMatrix = projectionMatrix * viewMatrix * carModelMatrix2;
 	glUniformMatrix4fv(loc, 1, false, &modelViewProjectionMatrix[0].x);
 	render(carModel);
 
@@ -304,29 +306,69 @@ int main(int argc, char* argv[])
 			{
 				showUI = !showUI;
 			}
+			else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT
+				&& (!showUI || !ImGui::GetIO().WantCaptureMouse))
+			{
+				g_isMouseDragging = true;
+				int x;
+				int y;
+				SDL_GetMouseState(&x, &y);
+				g_prevMouseCoords.x = x;
+				g_prevMouseCoords.y = y;
+			}
+
+			if (!(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT)))
+			{
+				g_isMouseDragging = false;
+			}
+			int delta_x = 0;
+			int delta_y = 0;
+			if (event.type == SDL_MOUSEMOTION && g_isMouseDragging)
+			{
+				// More info at https://wiki.libsdl.org/SDL_MouseMotionEvent
+				delta_x = event.motion.x - g_prevMouseCoords.x;
+				delta_y = event.motion.y - g_prevMouseCoords.y;
+				if (event.button.button == SDL_BUTTON_LEFT)
+				{
+					printf("Mouse motion while left button down (%i, %i)\n", event.motion.x, event.motion.y);
+				}
+				g_prevMouseCoords.x = event.motion.x;
+				g_prevMouseCoords.y = event.motion.y;
+			}
 			/////////////////////////////////////////////////////////////////////////
 			////////////////////////////////Task 4///////////////////////////////////
 			/////////////////////////////////////////////////////////////////////////
-			const float delta_x = 0.1f;
-			const float delta_y = 0.1f;
-			const float cameraCoeff = 0.01f;
 
-			// check keyboard state (which keys are still pressed)
-			const uint8_t* state = SDL_GetKeyboardState(nullptr);
+			if (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT))
+			{
+				const float cameraCoeff = 0.1f;
 
-			if (event.button.button & SDL_BUTTON(SDL_BUTTON_LEFT)) {
 				float rotationSpeed = 0.005f;
 				mat4 yaw = rotate(rotationSpeed * -delta_x, worldUp);
 				mat4 pitch = rotate(rotationSpeed * -delta_y, normalize(cross(cameraDirection, worldUp)));
 				cameraDirection = vec3(pitch * yaw * vec4(cameraDirection, 0.0f));
 
+				vec3 cameraPerpendicular = normalize(cross(cameraDirection, worldUp));
+
+				// check keyboard state (which keys are still pressed)
+				const uint8_t* state = SDL_GetKeyboardState(nullptr);
+
 				if (state[SDL_SCANCODE_W])
 				{
 					cameraPosition += cameraCoeff * cameraDirection;
 				}
-				else if (state[SDL_SCANCODE_S])
+				if (state[SDL_SCANCODE_S])
 				{
 					cameraPosition -= cameraCoeff * cameraDirection;
+				}
+				if (state[SDL_SCANCODE_D])
+				{
+
+					cameraPosition += cameraCoeff * cameraPerpendicular;
+				}
+				if (state[SDL_SCANCODE_A])
+				{
+					cameraPosition -= cameraCoeff * cameraPerpendicular;
 				}
 			}
 			/////////////////////////////////////////////////////////////////////////
@@ -334,6 +376,7 @@ int main(int argc, char* argv[])
 			/////////////////////////////////////////////////////////////////////////
 		}
 
+		/*
 		// check keyboard state (which keys are still pressed)
 		const uint8_t* state = SDL_GetKeyboardState(nullptr);
 
@@ -354,6 +397,7 @@ int main(int argc, char* argv[])
 		{
 			printf("Key Right is pressed down\n");
 		}
+		*/
 	}
 
 	// Shut down everything. This includes the window and all other subsystems.
