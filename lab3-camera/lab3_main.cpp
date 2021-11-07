@@ -45,6 +45,8 @@ bool g_isMouseDragging = false;
 float currentTime = 0.0f;
 float deltaTime = 0.0f;
 bool showUI = false;
+bool drivingForward = false;
+bool drivingBackward = false;
 
 // Models
 Model* cityModel = nullptr;
@@ -159,10 +161,10 @@ void display()
 	/////////////////////////////////////////////////////////////////////////
 
 	const float rotateSpeed = 2.f;
-	if (state[SDL_SCANCODE_LEFT]) {
+	if (state[SDL_SCANCODE_LEFT] && (drivingBackward || drivingForward)) {
 		R[0] -= rotateSpeed * deltaTime * R[2];
 	}
-	if (state[SDL_SCANCODE_RIGHT]) {
+	if (state[SDL_SCANCODE_RIGHT] && (drivingBackward || drivingForward)) {
 		R[0] += rotateSpeed * deltaTime * R[2];
 	}
 
@@ -183,9 +185,20 @@ void display()
 	const float speed = 10.f;
 	if (state[SDL_SCANCODE_UP]) {
 		T[3] += speed * deltaTime * R * vec4(0.0f, 0.0f, 1.0f, 0.0f);	// R * V for task 2
+		drivingForward = true;
 	}
+	else
+	{
+		drivingForward = false;
+	}
+
 	if (state[SDL_SCANCODE_DOWN]) {
 		T[3] -= speed * deltaTime * R * vec4(0.0f, 0.0f, 1.0f, 0.0f);	// R * V for task 2
+		drivingBackward = true;
+	}
+	else
+	{
+		drivingBackward = false;
 	}
 	/*
 	if (state[SDL_SCANCODE_LEFT]) {
@@ -335,69 +348,46 @@ int main(int argc, char* argv[])
 				g_prevMouseCoords.x = event.motion.x;
 				g_prevMouseCoords.y = event.motion.y;
 			}
-			/////////////////////////////////////////////////////////////////////////
-			////////////////////////////////Task 4///////////////////////////////////
-			/////////////////////////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////////////////////////
+		////////////////////////////////Task 4///////////////////////////////////
+		/////////////////////////////////////////////////////////////////////////
 
 			if (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT))
 			{
-				const float cameraCoeff = 0.1f;
-
 				float rotationSpeed = 0.005f;
 				mat4 yaw = rotate(rotationSpeed * -delta_x, worldUp);
 				mat4 pitch = rotate(rotationSpeed * -delta_y, normalize(cross(cameraDirection, worldUp)));
 				cameraDirection = vec3(pitch * yaw * vec4(cameraDirection, 0.0f));
-
-				vec3 cameraPerpendicular = normalize(cross(cameraDirection, worldUp));
-
-				// check keyboard state (which keys are still pressed)
-				const uint8_t* state = SDL_GetKeyboardState(nullptr);
-
-				if (state[SDL_SCANCODE_W])
-				{
-					cameraPosition += cameraCoeff * cameraDirection;
-				}
-				if (state[SDL_SCANCODE_S])
-				{
-					cameraPosition -= cameraCoeff * cameraDirection;
-				}
-				if (state[SDL_SCANCODE_D])
-				{
-
-					cameraPosition += cameraCoeff * cameraPerpendicular;
-				}
-				if (state[SDL_SCANCODE_A])
-				{
-					cameraPosition -= cameraCoeff * cameraPerpendicular;
-				}
 			}
-			/////////////////////////////////////////////////////////////////////////
-			///////////////////////////////END TASK 4////////////////////////////////
-			/////////////////////////////////////////////////////////////////////////
 		}
 
-		/*
+		vec3 cameraPerpendicular = normalize(cross(cameraDirection, worldUp));
+		const float depthCoeff = 0.1f;
+		const float sideCoeff = 0.2f;
 		// check keyboard state (which keys are still pressed)
 		const uint8_t* state = SDL_GetKeyboardState(nullptr);
 
-		// implement camera controls based on key states
-		if (state[SDL_SCANCODE_UP])
+		if (state[SDL_SCANCODE_W])
 		{
-			printf("Key Up is pressed down\n");
+			cameraPosition += depthCoeff * cameraDirection;
 		}
-		if (state[SDL_SCANCODE_DOWN])
+		if (state[SDL_SCANCODE_S])
 		{
-			printf("Key Down is pressed down\n");
+			cameraPosition -= depthCoeff * cameraDirection;
 		}
-		if (state[SDL_SCANCODE_LEFT])
+		if (state[SDL_SCANCODE_D])
 		{
-			printf("Key Left is pressed down\n");
+
+			cameraPosition += sideCoeff * cameraPerpendicular;
 		}
-		if (state[SDL_SCANCODE_RIGHT])
+		if (state[SDL_SCANCODE_A])
 		{
-			printf("Key Right is pressed down\n");
+			cameraPosition -= sideCoeff * cameraPerpendicular;
 		}
-		*/
+
+		/////////////////////////////////////////////////////////////////////////
+		///////////////////////////////END TASK 4////////////////////////////////
+		/////////////////////////////////////////////////////////////////////////
 	}
 
 	// Shut down everything. This includes the window and all other subsystems.
