@@ -227,7 +227,7 @@ void display()
 	R2 = rotate(rotateSpeed * currentTime, vec3(0.0f, 1.0f, 0.0f));
 	T2 = translate(5.0f * vec3(-1.0f, 0.0f, 0.0f));
 
-	carModelMatrix2 = R2 * T2;
+	carModelMatrix2 = R2 * T2 * scale(vec3(2.0f));
 
 	// car
 	modelViewProjectionMatrix = projectionMatrix * viewMatrix * carModelMatrix2;
@@ -383,6 +383,14 @@ int main(int argc, char* argv[])
 		if (state[SDL_SCANCODE_A])
 		{
 			cameraPosition -= sideCoeff * cameraPerpendicular;
+		}
+		if (state[SDL_SCANCODE_SPACE])
+		{
+			cameraPosition += sideCoeff * worldUp;
+		}
+		if (state[SDL_SCANCODE_C])
+		{
+			cameraPosition -= sideCoeff * worldUp;
 		}
 
 		/////////////////////////////////////////////////////////////////////////
