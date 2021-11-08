@@ -63,8 +63,8 @@ vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 	//            return vec3(0);
 	///////////////////////////////////////////////////////////////////////////
 
-	float dist = distance(viewSpaceNormal, viewSpaceLightPosition);
-	vec3 wi = viewSpaceLightPosition - viewSpacePosition;
+	float dist = distance(viewSpacePosition, viewSpaceLightPosition);
+	vec3 wi = -vec3(1.0f) + 2 * dot(n, vec3(1.0f)) * n;
 
 	if (dot(n, wi) <= 0)
 	{
@@ -78,7 +78,7 @@ vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 		///////////////////////////////////////////////////////////////////////////
 		// vec3 diffuse_term = ...
 
-	vec3 diffuse_term = material_color * (1.0/PI) * abs(dot(n, wi)) * Li;
+	vec3 diffuse_term = material_color * (1.0f/PI) * abs(dot(n, wi)) * Li;
 
 	///////////////////////////////////////////////////////////////////////////
 	// Task 2 - Calculate the Torrance Sparrow BRDF and return the light
@@ -88,6 +88,7 @@ vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 	// Task 3 - Make your shader respect the parameters of our material model.
 	///////////////////////////////////////////////////////////////////////////
 
+	//return base_color;
 	return diffuse_term;
 }
 
@@ -136,7 +137,7 @@ void main()
 	///////////////////////////////////////////////////////////////////////////
 	// Task 1.4 - Make glowy things glow!
 	///////////////////////////////////////////////////////////////////////////
-	vec3 emission_term = vec3(0.0);
+	vec3 emission_term = material_emission * material_color;
 
 	vec3 final_color = direct_illumination_term + indirect_illumination_term + emission_term;
 
