@@ -58,17 +58,17 @@ vec3 point_light_color = vec3(1.f, 1.f, 1.f);
 ///////////////////////////////////////////////////////////////////////////////
 
 //// MaterialTest ///////////////////////////////////////////////////////////////
-//vec3 cameraPosition(0.0f, 30.0f, 30.0f);
-//vec3 cameraDirection = normalize(vec3(0.0f) - cameraPosition);
-//vec3 worldUp(0.0f, 1.0f, 0.0f);
-//const std::string model_filename = "../scenes/materialtest.obj";
+vec3 cameraPosition(0.0f, 30.0f, 30.0f);
+vec3 cameraDirection = normalize(vec3(0.0f) - cameraPosition);
+vec3 worldUp(0.0f, 1.0f, 0.0f);
+const std::string model_filename = "../scenes/materialtest.obj";
 /////////////////////////////////////////////////////////////////////////////////
 
 // NewShip ////////////////////////////////////////////////////////////////////
-vec3 cameraPosition(-30.0f, 10.0f, 30.0f);
-vec3 cameraDirection = normalize(vec3(0.0f) - cameraPosition);
-vec3 worldUp(0.0f, 1.0f, 0.0f);
-const std::string model_filename = "../scenes/NewShip.obj";
+//vec3 cameraPosition(-30.0f, 10.0f, 30.0f);
+//vec3 cameraDirection = normalize(vec3(0.0f) - cameraPosition);
+//vec3 worldUp(0.0f, 1.0f, 0.0f);
+//const std::string model_filename = "../scenes/NewShip.obj";
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -93,23 +93,20 @@ void loadShaders(bool is_reload)
 ///////////////////////////////////////////////////////////////////////////////
 // Create buffer to render a full screen quad
 ///////////////////////////////////////////////////////////////////////////////
-GLuint vertexArrayObject, positionBuffer, indexBuffer;
 void initFullScreenQuad()
-{
-	// Task 4
-	GLboolean depth_test_enabled;
-	glDisable(GL_DEPTH_TEST);
-	glGetBooleanv(GL_DEPTH_TEST, &depth_test_enabled);
+{	
 	///////////////////////////////////////////////////////////////////////////
 	// initialize the fullScreenQuadVAO for drawFullScreenQuad
 	///////////////////////////////////////////////////////////////////////////
 	if(fullScreenQuadVAO == 0)
 	{
-		// Create a handle for the vertex array object
-		glGenVertexArrays(1, &vertexArrayObject);
-		// Set it as current, i.e., related calls will affect this object
-		glBindVertexArray(vertexArrayObject);
 		// >>> @task 4.1
+
+		GLuint positionBuffer, indexBuffer;
+
+		glGenVertexArrays(1, &fullScreenQuadVAO);
+		glBindVertexArray(fullScreenQuadVAO);
+
 		const float positions[] = 
 		{
 			-1.0f, -1.0f,	// (u,v) for v0
@@ -117,6 +114,10 @@ void initFullScreenQuad()
 			1.0f, 1.0f,		// (u,v) for v2
 			1.0f, -1.0f		// (u,v) for v3
 			
+		};
+		const int indices[] = {
+			2, 1, 0,	// Triangle 1
+			0, 3, 2		// Triangle 2
 		};
 
 		glGenBuffers(1, &positionBuffer);
@@ -126,10 +127,6 @@ void initFullScreenQuad()
 		glVertexAttribPointer(0, 2, GL_FLOAT, false/*normalized*/, 0/*stride*/, 0/*offset*/);
 		glEnableVertexAttribArray(0);
 
-		const int indices[] = {
-			0, 1, 3,	// Triangle 1
-			1, 2, 3		// Triangle 2
-		};
 		glGenBuffers(1, &indexBuffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
@@ -141,31 +138,14 @@ void initFullScreenQuad()
 ///////////////////////////////////////////////////////////////////////////////
 void drawFullScreenQuad()
 {
-	// The viewport determines how many pixels we are rasterizing to
-	int w, h;
-	SDL_GetWindowSize(g_window, &w, &h);
-	// Set viewport
-	glViewport(0, 0, w, h);
-
-	// Set clear color
-	//glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
-	// Clears the color buffer and the z-buffer
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// We disable backface culling for this tutorial, otherwise care must be taken with the winding order
-	// of the vertices. It is however a lot faster to enable culling when drawing large scenes.
-	glDisable(GL_CULL_FACE);
-	// Disable depth testing
-	glDisable(GL_DEPTH_TEST);
-	// Set the shader program to use for this draw call
-	//glUseProgram(shaderProgram);
-
 	///////////////////////////////////////////////////////////////////////////
 	// draw a quad at full screen
 	///////////////////////////////////////////////////////////////////////////
 	// >>> @task 4.2
-	glBindVertexArray(vertexArrayObject);
+	glDisable(GL_DEPTH_TEST);
+	glBindVertexArray(fullScreenQuadVAO);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	glEnable(GL_DEPTH_TEST);
 }
 
 

@@ -115,18 +115,49 @@ vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 
 vec3 calculateIndirectIllumination(vec3 wo, vec3 n, vec3 base_color)
 {
-	vec3 indirect_illum = vec3(0.f);
 	///////////////////////////////////////////////////////////////////////////
 	// Task 5 - Lookup the irradiance from the irradiance map and calculate
 	//          the diffuse reflection
 	///////////////////////////////////////////////////////////////////////////
+
+	// Calculate the world-space direction from the camera to that position
+	vec4 dir = normalize(viewInverse * vec4(n,0));
+
+	// Calculate the spherical coordinates of the direction
+	float theta = acos(max(-1.0f, min(1.0f, dir.y)));
+	float phi = atan(dir.z, dir.x);
+	if(phi < 0.0f)
+	{
+		phi = phi + 2.0f * PI;
+	}
+
+	// Use these to lookup the color in the environment map
+	vec2 lookup = vec2(phi / (2.0 * PI), theta / PI);
+	vec3 indirect_illum = environment_multiplier * texture(irradianceMap, lookup).xyz;
+
+	vec3 diffuse_term = material_color * (1.0f / PI) * indirect_illum;
 
 	///////////////////////////////////////////////////////////////////////////
 	// Task 6 - Look up in the reflection map from the perfect specular
 	//          direction and calculate the dielectric and metal terms.
 	///////////////////////////////////////////////////////////////////////////
 
-	return indirect_illum;
+	//vec3 wi = normalize(reflect(wo, n));
+	vec3 wi = normalize(reflect(wo, n));
+	vec3 wh = normalize(wi + wo);
+	float F_wi = material_fresnel + (1.0f - material_fresnel) * pow(max(0.00001f, 1.0f - dot(wh, wi)), 5);
+
+	
+	float roughness = sqrt(sqrt(2.0f / (material_shininess + 2.0f)));
+	indirect_illum = environment_multiplier * textureLod(reflectionMap, lookup, roughness * 7.0f).xyz;
+
+	vec3 dielectric_term = F_wi * indirect_illum + (1 - F_wi) * diffuse_term;
+	vec3 metal_term = F_wi * material_color * indirect_illum;
+	vec3 microfacet_term = material_metalness * metal_term + (1.0f - material_metalness) * dielectric_term;
+
+	//return indirect_illum;
+	//return diffuse_term;
+	return material_reflectivity * microfacet_term + (1.0f - material_reflectivity) * diffuse_term;
 }
 
 
