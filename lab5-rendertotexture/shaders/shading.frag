@@ -58,13 +58,86 @@ layout(location = 0) out vec4 fragmentColor;
 
 vec3 calculateDirectIllumiunation(vec3 wo, vec3 n, vec3 base_color)
 {
-	return vec3(1.f);
+	float dist = distance(viewSpacePosition, viewSpaceLightPosition);
+	vec3 wi = normalize(viewSpaceLightPosition - viewSpacePosition);
+	vec3 wh = normalize(wi + wo);
+
+	if (dot(n, wi) <= 0.0f)
+	{
+		return vec3(0.0f);
+	}
+
+	vec3 Li = point_light_intensity_multiplier * point_light_color * 1/pow(dist, 2);
+
+	vec3 diffuse_term = material_color * (1.0f/PI) * abs(dot(n, wi)) * Li;
+
+	float D_wh = ((material_shininess + 2.0f)/(2.0f * PI)) * pow(max(0.00001f, dot(n, wh)), material_shininess);
+
+	float G_wi_wo = min(1.0f, min(2.0f * dot(n, wh) * dot(n, wo) / dot(wo, wh), 2.0f * dot(n, wh) * dot(n, wi) / dot(wo, wh)));
+
+	float F_wi = material_fresnel + (1.0f - material_fresnel) * pow(max(0.00001f, 1.0f - dot(wh, wi)), 5);
+
+	float brdf = (F_wi * D_wh * G_wi_wo) / (4 * dot(n, wo) * dot(n, wi));
+
+	vec3 dielectric_term = brdf * dot(n, wi) * Li + (1 - F_wi) * diffuse_term;
+
+	vec3 metal_term = brdf * material_color * dot(n, wi) * Li;
+	
+	vec3 microfacet_term = material_metalness * metal_term + (1 - material_metalness) * dielectric_term;
+
+	//return base_color;
+	//return diffuse_term;
+	//return vec3(D_wh);
+	//return vec3(G_wi_wo);
+	//return vec3(F_wi);
+	//return brdf * dot(n, wi) * Li; 
+	return material_reflectivity * microfacet_term + (1 - material_reflectivity) * diffuse_term;
 }
 
 vec3 calculateIndirectIllumination(vec3 wo, vec3 n, vec3 base_color)
 {
-	return vec3(0.0);
+	// Calculate the world-space direction from the camera to that position
+	vec4 dir = normalize(viewInverse * vec4(n, 0.0f));
+
+	// Calculate the spherical coordinates of the direction
+	float theta = acos(max(-1.0f, min(1.0f, dir.y)));
+	float phi = atan(dir.z, dir.x);
+	if(phi < 0.0f)
+	{
+		phi = phi + 2.0f * PI;
+	}
+
+	// Use these to lookup the color in the environment map
+	vec2 lookup = vec2(phi / (2.0 * PI), theta / PI);
+	vec3 indirect_illum = environment_multiplier * texture(irradianceMap, lookup).xyz;
+
+	vec3 diffuse_term = material_color * (1.0f / PI) * indirect_illum;
+
+	vec3 wi = reflect(-wo, n);
+	vec3 wh = normalize(wi + wo);
+	vec4 wiWorldSpace = viewInverse * vec4(wi, 0.0f);
+	float roughness = sqrt(sqrt(2.0f / (material_shininess + 2.0f)));
+
+	theta = acos(max(-1.0f, min(1.0f, wiWorldSpace.y)));
+	phi = atan(wiWorldSpace.z, wiWorldSpace.x);
+	if(phi < 0.0f)
+	{
+		phi = phi + 2.0f * PI;
+	}
+	lookup = vec2(phi / (2.0 * PI), theta / PI);
+
+	indirect_illum = environment_multiplier * textureLod(reflectionMap, lookup, roughness * 7.0f).xyz;
+
+	float F_wi = material_fresnel + (1.0f - material_fresnel) * pow(max(0.00001f, 1.0f - dot(wo, wh)), 5);
+	vec3 dielectric_term = F_wi * indirect_illum + (1 - F_wi) * diffuse_term;
+	vec3 metal_term = F_wi * material_color * indirect_illum;
+	vec3 microfacet_term = material_metalness * metal_term + (1.0f - material_metalness) * dielectric_term;
+
+	//return indirect_illum;
+	//return diffuse_term;
+	return material_reflectivity * microfacet_term + (1.0f - material_reflectivity) * diffuse_term;
 }
+
 
 
 void main()
