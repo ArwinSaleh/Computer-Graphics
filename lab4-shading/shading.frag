@@ -121,7 +121,7 @@ vec3 calculateIndirectIllumination(vec3 wo, vec3 n, vec3 base_color)
 	///////////////////////////////////////////////////////////////////////////
 
 	// Calculate the world-space direction from the camera to that position
-	vec4 dir = normalize(viewInverse * vec4(n,0));
+	vec4 dir = normalize(viewInverse * vec4(n, 0.0f));
 
 	// Calculate the spherical coordinates of the direction
 	float theta = acos(max(-1.0f, min(1.0f, dir.y)));
@@ -143,14 +143,22 @@ vec3 calculateIndirectIllumination(vec3 wo, vec3 n, vec3 base_color)
 	///////////////////////////////////////////////////////////////////////////
 
 	//vec3 wi = normalize(reflect(wo, n));
-	vec3 wi = normalize(reflect(wo, n));
+	vec3 wi = reflect(-wo, n);
 	vec3 wh = normalize(wi + wo);
-	float F_wi = material_fresnel + (1.0f - material_fresnel) * pow(max(0.00001f, 1.0f - dot(wh, wi)), 5);
-
-	
+	vec4 wiWorldSpace = viewInverse * vec4(wi, 0.0f);
 	float roughness = sqrt(sqrt(2.0f / (material_shininess + 2.0f)));
+
+	theta = acos(max(-1.0f, min(1.0f, wiWorldSpace.y)));
+	phi = atan(wiWorldSpace.z, wiWorldSpace.x);
+	if(phi < 0.0f)
+	{
+		phi = phi + 2.0f * PI;
+	}
+	lookup = vec2(phi / (2.0 * PI), theta / PI);
+
 	indirect_illum = environment_multiplier * textureLod(reflectionMap, lookup, roughness * 7.0f).xyz;
 
+	float F_wi = material_fresnel + (1.0f - material_fresnel) * pow(max(0.00001f, 1.0f - dot(wo, wh)), 5);
 	vec3 dielectric_term = F_wi * indirect_illum + (1 - F_wi) * diffuse_term;
 	vec3 metal_term = F_wi * material_color * indirect_illum;
 	vec3 microfacet_term = material_metalness * metal_term + (1.0f - material_metalness) * dielectric_term;
