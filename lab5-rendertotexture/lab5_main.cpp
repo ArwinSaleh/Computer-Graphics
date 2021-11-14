@@ -40,6 +40,9 @@ bool g_isMouseDragging = false;
 ///////////////////////////////////////////////////////////////////////////////
 GLuint backgroundProgram, shaderProgram, postFxShader;
 
+// Task 6
+GLuint horizontalBlurShader, verticalBlurShader;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Environment
 ///////////////////////////////////////////////////////////////////////////////
@@ -193,6 +196,9 @@ struct FboInfo
 	}
 };
 
+// Task 6
+FboInfo horizontalBlurFbo;
+FboInfo verticalBlurFbo;
 
 void initGL()
 {
@@ -216,6 +222,19 @@ void initGL()
 	                                            "../lab5-rendertotexture/shaders/postFx.frag");
 
 	///////////////////////////////////////////////////////////////////////////
+	// TASK 6
+	///////////////////////////////////////////////////////////////////////////
+
+	horizontalBlurShader = labhelper::loadShaderProgram("../lab5-rendertotexture/shaders/postFx.vert",
+		"../lab5-rendertotexture/shaders/horizontal_blur.frag");
+	verticalBlurShader = labhelper::loadShaderProgram("../lab5-rendertotexture/shaders/postFx.vert",
+		"../lab5-rendertotexture/shaders/vertical_blur.frag");
+
+	///////////////////////////////////////////////////////////////////////////
+	// END TASK 6
+	///////////////////////////////////////////////////////////////////////////
+
+	///////////////////////////////////////////////////////////////////////////
 	// Load environment map
 	///////////////////////////////////////////////////////////////////////////
 	const int roughnesses = 8;
@@ -236,6 +255,10 @@ void initGL()
 	for (int i = 0; i < numFbos; i++) {
 		fboList.push_back(FboInfo(w, h));
 	}
+
+	// Task 6
+	horizontalBlurFbo = FboInfo(w, h);
+	verticalBlurFbo = FboInfo(w, h);
 }
 
 void drawScene(const mat4& view, const mat4& projection)
@@ -305,6 +328,12 @@ void display()
 			fboList[i].resize(w, h);
 	}
 
+	// Task 6
+	if (horizontalBlurFbo.width != w || horizontalBlurFbo.height != h)
+		horizontalBlurFbo.resize(w, h);
+	if (verticalBlurFbo.width != w || verticalBlurFbo.height != h)
+		verticalBlurFbo.resize(w, h);
+
 	///////////////////////////////////////////////////////////////////////////
 	// setup matrices
 	///////////////////////////////////////////////////////////////////////////
@@ -353,6 +382,32 @@ void display()
 
 	// camera (obj-model)
 	drawCamera(securityCamViewMatrix, viewMatrix, projectionMatrix);
+
+	///////////////////////////////////////////////////////////////////////
+	// TASK 6
+	///////////////////////////////////////////////////////////////////////
+
+	// Select default framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, horizontalBlurFbo.framebufferId);
+	glViewport(0, 0, w, h);
+	glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glUseProgram(horizontalBlurShader);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, horizontalBlurFbo.colorTextureTarget);
+
+	// Select default framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, verticalBlurFbo.framebufferId);
+	glViewport(0, 0, w, h);
+	glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glUseProgram(verticalBlurShader);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, verticalBlurFbo.colorTextureTarget);
+
+	///////////////////////////////////////////////////////////////////////
+	// END TASK 6
+	///////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////
 	// Post processing pass(es)
