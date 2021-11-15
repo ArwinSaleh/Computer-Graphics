@@ -393,8 +393,10 @@ void display()
 	glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(horizontalBlurShader);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, horizontalBlurFbo.colorTextureTarget);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fboList[1].colorTextureTarget);
+
+	labhelper::drawFullScreenQuad();
 
 	// Select default framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, verticalBlurFbo.framebufferId);
@@ -402,8 +404,10 @@ void display()
 	glClearColor(0.2f, 0.2f, 0.8f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(verticalBlurShader);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, verticalBlurFbo.colorTextureTarget);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, horizontalBlurFbo.colorTextureTarget);
+
+	labhelper::drawFullScreenQuad();
 
 	///////////////////////////////////////////////////////////////////////
 	// END TASK 6
@@ -425,6 +429,9 @@ void display()
 	glUseProgram(postFxShader);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fboList[1].colorTextureTarget);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, verticalBlurFbo.colorTextureTarget);
 
 	///////////////////////////////////////////////////////////////////////
 	// END TASK 3

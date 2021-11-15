@@ -13,6 +13,9 @@ uniform mat4 normalMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 modelViewProjectionMatrix;
 
+// Task 6
+uniform mat4 lightMatrix;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Output to fragment shader
 ///////////////////////////////////////////////////////////////////////////////
@@ -20,10 +23,16 @@ out vec2 texCoord;
 out vec3 viewSpaceNormal;
 out vec3 viewSpacePosition;
 
+// Task 6
+out vec4 shadowMapCoord;
+
 void main()
 {
 	gl_Position = modelViewProjectionMatrix * vec4(position, 1.0);
 	texCoord = texCoordIn;
 	viewSpaceNormal = (normalMatrix * vec4(normalIn, 0.0)).xyz;
 	viewSpacePosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+
+	// Task 6
+	shadowMapCoord = lightMatrix * vec4(viewSpacePosition, 1.f);
 }

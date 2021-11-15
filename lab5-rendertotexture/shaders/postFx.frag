@@ -119,6 +119,7 @@ vec3 blur(vec2 coord)
 	vec3 result = vec3(0.0);
 	float weight = 1.0 / (filterSize * filterSize);
 
+	// O(n^2)
 	for(int i = -filterSize / 2; i <= filterSize / 2; ++i)
 		for(int j = -filterSize / 2; j <= filterSize / 2; ++j)
 		{
@@ -130,19 +131,8 @@ vec3 blur(vec2 coord)
 
 vec3 separableBlur(vec2 coord)
 {
-	vec3 result = vec3(0.0);
-	float weight = 1.0 / (filterSize * filterSize);
-
-	for(int j = -filterSize / 2; j <= filterSize / 2; ++j)
-	{
-		result += weight * textureRect(blurredFrameBufferTexture, coord + vec2(j, 0)).xyz;
-	}
-	for(int j = -filterSize / 2; j <= filterSize / 2; ++j)
-	{
-		result += weight * textureRect(blurredFrameBufferTexture, coord + vec2(0, j)).xyz;
-	}
-
-	return result;
+	// O(2n)
+	return textureRect(blurredFrameBufferTexture, coord).xyz;
 }
 
 vec3 grayscale(vec3 rgbSample)
