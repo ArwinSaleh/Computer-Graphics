@@ -67,7 +67,7 @@ void initialize()
 	pathtracer::settings.max_bounces = 8;
 	pathtracer::settings.max_paths_per_pixel = 0; // 0 = Infinite
 #ifdef _DEBUG
-	pathtracer::settings.subsampling = 16;
+	pathtracer::settings.subsampling = 4;	// CHANGE SAMPLING
 #else
 	pathtracer::settings.subsampling = 4;
 #endif

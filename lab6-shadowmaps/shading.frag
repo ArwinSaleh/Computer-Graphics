@@ -159,6 +159,15 @@ void main()
 	//float visibility= (depth>=(shadowMapCoord.z/shadowMapCoord.w)) ? 1.0 : 0.0;
 	
 	// Task 7
+	/*
+	textureProj performs a texture lookup with projection. The texture coordinates consumed
+    from P, not including the last component of P, are divided by the last component of P. The
+    resulting 3rd component of P in the shadow forms is used as Dref. After these values are
+    computed, the texture lookup proceeds as in texture().
+
+	Basically textureProj() does the same as texture() but with projection, using sampler2DShadow
+	for shadow mapping when reading depth textures.
+	*/
 	float visibility = textureProj( shadowMapTex, shadowMapCoord );
 
 	// Task 5
