@@ -75,10 +75,26 @@ vec3 Li(Ray& primary_ray)
 	///////////////////////////////////////////////////////////////////
 
 	Diffuse diffuse(hit.material->m_color);
-	BRDF& mat = diffuse;
+	//BRDF& mat = diffuse;
+	// Task 3: Blinn Phong BRDF
+	BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
+	BRDF& mat = dielectric;
+
 	///////////////////////////////////////////////////////////////////
 	// Calculate Direct Illumination from light.
 	///////////////////////////////////////////////////////////////////
+
+	// Task 2: Generate ray-traced shadows using occluded()
+	// We need intersect() to check for when rays are hitting surfaces
+	// in the environment, then we can use shoot another ray from
+	// that point to the light source and check if it is occluded,
+	// if it isn't occluded we calculate the direct illumination.
+	// Otherwise, not. 
+	Ray occlusionRay;
+	occlusionRay.o = hit.position + EPSILON * hit.geometry_normal;	// hit.geometry_normal * EPSILON ?
+	occlusionRay.d = normalize(point_light.position - hit.position);
+
+	if (!occluded(occlusionRay))
 	{
 		const float distance_to_light = length(point_light.position - hit.position);
 		const float falloff_factor = 1.0f / (distance_to_light * distance_to_light);

@@ -33,11 +33,38 @@ vec3 Diffuse::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
 ///////////////////////////////////////////////////////////////////////////
 vec3 BlinnPhong::refraction_brdf(const vec3& wi, const vec3& wo, const vec3& n)
 {
-	return vec3(0.0f);
+	// Task 3: Blinn Phong BRDF
+
+	if (refraction_layer == NULL)
+	{
+		return vec3(0.0f);
+	}
+
+	vec3 wh = normalize(wi + wo);
+	float F_wi = R0 + (1.0f - R0) * pow(max(0.00001f, 1.0f - dot(wh, wi)), 5.0f);
+
+
+	return (1 - F_wi) * refraction_layer->f(wi, wo, n);
 }
 vec3 BlinnPhong::reflection_brdf(const vec3& wi, const vec3& wo, const vec3& n)
 {
-	return vec3(0.0f);
+	// Task 3: Blinn Phong BRDF
+
+	if (dot(n, wi) <= 0.0f)
+	{
+		return vec3(0.0f);
+	}
+
+	vec3 wh = normalize(wi + wo);
+
+	// Computing D(wh), G(wi, wo) and F(wi).
+	float D_wh = ((shininess + 2.0f) / (2.0f * M_PI)) * pow(max(0.00001f, dot(n, wh)), shininess);
+	float G_wi_wo = min(1.0f, min(2.0f * dot(n, wh) * dot(n, wo) / dot(wo, wh), 2.0f * dot(n, wh) * dot(n, wi) / dot(wo, wh)));
+	float F_wi = R0 + (1.0f - R0) * pow(max(0.00001f, 1.0f - dot(wh, wi)), 5);
+
+	float brdf = (F_wi * D_wh * G_wi_wo) / (4 * dot(n, wo) * dot(n, wi));
+
+	return vec3(brdf);
 }
 
 vec3 BlinnPhong::f(const vec3& wi, const vec3& wo, const vec3& n)
