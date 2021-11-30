@@ -74,15 +74,42 @@ vec3 BlinnPhong::f(const vec3& wi, const vec3& wo, const vec3& n)
 
 vec3 BlinnPhong::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
 {
+	
 	vec3 tangent = normalize(perpendicular(n));
 	vec3 bitangent = normalize(cross(tangent, n));
-	vec3 sample = cosineSampleHemisphere();
-	wi = normalize(sample.x * tangent + sample.y * bitangent + sample.z * n);
-	if(dot(wi, n) <= 0.0f)
-		p = 0.0f;
+	float phi = 2.0f * M_PI * randf();
+	float cos_theta = pow(randf(), 1.0f / (shininess + 1));
+	float sin_theta = sqrt(max(0.0f, 1.0f - cos_theta * cos_theta));
+	vec3 wh = normalize(sin_theta * cos(phi) * tangent +
+		sin_theta * sin(phi) * bitangent +
+		cos_theta * n);
+	if (dot(wo, n) <= 0.0f) return vec3(0.0f);
+	
+
+	// Task 6
+	if (randf() < 0.5f)
+	{
+		// Sample a direction based on the Microfacet brdf
+		wi = reflect(-wo, wh);
+		float p_wh = (shininess + 1.0f) * pow(dot(n, wh), shininess) / (2.0f * M_PI);
+		float p_wi = p_wh / (4.0f * dot(wo, wh));
+		p = p_wi;
+		p *= 0.5f;
+
+		return reflection_brdf(wi, wo, n);
+	}
 	else
-		p = max(0.0f, dot(n, wi)) / M_PI;
-	return f(wi, wo, n);
+	{
+		// Sample a direction for the underlying layer
+		vec3 brdf = refraction_layer->sample_wi(wi, wo, n, p);
+		p *= 0.5f;
+
+		// We need to attenuate the refracted brdf with (1 - F)
+		float F = R0 + (1.0f - R0) * pow(1.0f - abs(dot(wh, wi)), 5.0f);
+
+		return (1.0f - F) * brdf;
+
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////

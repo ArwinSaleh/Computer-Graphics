@@ -129,7 +129,8 @@ vec3 Li_pathtracer(Ray& primary_ray)
 
 		// Create a Material tree
 		Diffuse diffuse(hit.material->m_color);
-		BRDF& mat = diffuse;
+		BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
+		BRDF& mat = dielectric;
 
 		// Direct Illumination
 		Ray occlusionRay;
