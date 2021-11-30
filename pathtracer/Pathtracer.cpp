@@ -74,11 +74,19 @@ vec3 Li(Ray& primary_ray)
 	// sample directions.
 	///////////////////////////////////////////////////////////////////
 
-	Diffuse diffuse(hit.material->m_color);
+	//Diffuse diffuse(hit.material->m_color);
 	//BRDF& mat = diffuse;
 	// Task 3: Blinn Phong BRDF
+	//BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
+	//BRDF& mat = dielectric;
+
+	// Task 4
+	Diffuse diffuse(hit.material->m_color);
 	BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
-	BRDF& mat = dielectric;
+	BlinnPhongMetal metal(hit.material->m_color, hit.material->m_shininess, hit.material->m_fresnel);
+	LinearBlend metal_blend(hit.material->m_metalness, &metal, &dielectric);
+	LinearBlend reflectivity_blend(hit.material->m_reflectivity, &metal_blend, &diffuse);
+	BRDF& mat = reflectivity_blend;
 
 	///////////////////////////////////////////////////////////////////
 	// Calculate Direct Illumination from light.
@@ -102,7 +110,74 @@ vec3 Li(Ray& primary_ray)
 		vec3 wi = normalize(point_light.position - hit.position);
 		L = mat.f(wi, hit.wo, hit.shading_normal) * Li * std::max(0.0f, dot(wi, hit.shading_normal));
 	}
+
 	// Return the final outgoing radiance for the primary ray
+	return L;
+}
+
+// Task 5
+vec3 Li_pathtracer(Ray& primary_ray)
+{
+	vec3 L = vec3(0.0f);
+	vec3 pathThroughput = vec3(1.0f);
+	Ray currentRay = primary_ray;
+
+	for (int bounces = 0; bounces < settings.max_bounces; bounces++)
+	{
+		// Get the intersection information from the ray
+		Intersection hit = getIntersection(currentRay);
+
+		// Create a Material tree
+		Diffuse diffuse(hit.material->m_color);
+		BRDF& mat = diffuse;
+
+		// Direct Illumination
+		Ray occlusionRay;
+		occlusionRay.o = hit.position + EPSILON * hit.geometry_normal;	// hit.geometry_normal * EPSILON ?
+		occlusionRay.d = normalize(point_light.position - hit.position);
+		if (!occluded(occlusionRay))
+		{
+			const float distance_to_light = length(point_light.position - hit.position);
+			const float falloff_factor = 1.0f / (distance_to_light * distance_to_light);
+			vec3 Li = point_light.intensity_multiplier * point_light.color * falloff_factor;
+			vec3 wi = normalize(point_light.position - hit.position);
+			L += pathThroughput * mat.f(wi, hit.wo, hit.shading_normal) * Li * std::max(0.0f, dot(wi, hit.shading_normal));
+		}
+
+		// Add emitted radiance from intersection
+		L += pathThroughput * hit.material->m_emission * hit.material->m_color;
+
+		// Sample an incoming direction (and the brdf and pdf for that direction)
+		float pdf;
+		vec3 wi, brdf;
+		brdf = mat.sample_wi(wi, hit.wo, hit.shading_normal, pdf);
+
+		float cosineterm = abs(dot(wi, hit.shading_normal));
+
+		pathThroughput = pathThroughput * (brdf * cosineterm) / pdf;
+
+		// If pathThroughput is zero there is no need to continue
+		if (pathThroughput == vec3(0.0f))
+		{
+			return L;
+		}
+		
+		// Create next ray on path (existing instance can't be reused)
+		Ray newRay(hit.position, wi);
+		currentRay = newRay;
+
+		// Bias the ray slightly to avoid self-intersection
+		currentRay.o += EPSILON * hit.geometry_normal;
+
+		// Intersect the new ray and if there is no intersection just
+		// add environment contribution and finish
+		if (!intersect(currentRay))
+		{
+			L += pathThroughput * Lenvironment(currentRay.d);
+			return L;
+		}
+		// Otherwise, reiterate for the new intersection
+	}
 	return L;
 }
 
@@ -156,7 +231,9 @@ void tracePaths(const glm::mat4& V, const glm::mat4& P)
 			if(intersect(primaryRay))
 			{
 				// If it hit something, evaluate the radiance from that point
-				color = Li(primaryRay);
+				//color = Li(primaryRay);
+				// Task 5
+				color = Li_pathtracer(primaryRay);
 			}
 			else
 			{

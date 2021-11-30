@@ -39,9 +39,9 @@ vec3 BlinnPhong::refraction_brdf(const vec3& wi, const vec3& wo, const vec3& n)
 	{
 		return vec3(0.0f);
 	}
-
 	vec3 wh = normalize(wi + wo);
-	float F_wi = R0 + (1.0f - R0) * pow(max(0.00001f, 1.0f - dot(wh, wi)), 5.0f);
+	float wh_wi = max(0.0f, dot(wh, wi));
+	float F_wi = R0 + (1.0f - R0) * pow(1.0f - wh_wi, 5.0f);
 
 
 	return (1 - F_wi) * refraction_layer->f(wi, wo, n);
@@ -102,12 +102,14 @@ vec3 BlinnPhongMetal::reflection_brdf(const vec3& wi, const vec3& wo, const vec3
 ///////////////////////////////////////////////////////////////////////////
 vec3 LinearBlend::f(const vec3& wi, const vec3& wo, const vec3& n)
 {
-	return vec3(0.0);
+	// Task 4
+	// 'w' between 0 and 1
+	return w * bsdf0->f(wi, wo, n) + (1 - w) * bsdf1->f(wi, wo, n);
 }
 
 vec3 LinearBlend::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
 {
-	p = 0.0f;
+	p = 0.0f;	// Probability
 	return vec3(0.0f);
 }
 
