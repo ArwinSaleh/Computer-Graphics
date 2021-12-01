@@ -82,11 +82,8 @@ vec3 Li(Ray& primary_ray)
 
 	// Task 4
 	Diffuse diffuse(hit.material->m_color);
-	BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
-	BlinnPhongMetal metal(hit.material->m_color, hit.material->m_shininess, hit.material->m_fresnel);
-	LinearBlend metal_blend(hit.material->m_metalness, &metal, &dielectric);
-	LinearBlend reflectivity_blend(hit.material->m_reflectivity, &metal_blend, &diffuse);
-	BRDF& mat = reflectivity_blend;
+	//BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
+	BRDF& mat = diffuse;
 
 	///////////////////////////////////////////////////////////////////
 	// Calculate Direct Illumination from light.
@@ -98,9 +95,7 @@ vec3 Li(Ray& primary_ray)
 	// that point to the light source and check if it is occluded,
 	// if it isn't occluded we calculate the direct illumination.
 	// Otherwise, not. 
-	Ray occlusionRay;
-	occlusionRay.o = hit.position + EPSILON * hit.geometry_normal;	// hit.geometry_normal * EPSILON ?
-	occlusionRay.d = normalize(point_light.position - hit.position);
+	Ray occlusionRay(hit.position + EPSILON * hit.geometry_normal, normalize(point_light.position - hit.position));
 
 	if (!occluded(occlusionRay))
 	{
@@ -130,12 +125,13 @@ vec3 Li_pathtracer(Ray& primary_ray)
 		// Create a Material tree
 		Diffuse diffuse(hit.material->m_color);
 		BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
-		BRDF& mat = dielectric;
+		BlinnPhongMetal metal(hit.material->m_color, hit.material->m_shininess, hit.material->m_fresnel);
+		LinearBlend metal_blend(hit.material->m_metalness, &metal, &dielectric);
+		LinearBlend reflectivity_blend(hit.material->m_reflectivity, &metal_blend, &diffuse);
+		BRDF& mat = reflectivity_blend;
 
 		// Direct Illumination
-		Ray occlusionRay;
-		occlusionRay.o = hit.position + EPSILON * hit.geometry_normal;	// hit.geometry_normal * EPSILON ?
-		occlusionRay.d = normalize(point_light.position - hit.position);
+		Ray occlusionRay(hit.position + EPSILON * hit.geometry_normal, normalize(point_light.position - hit.position));
 		if (!occluded(occlusionRay))
 		{
 			const float distance_to_light = length(point_light.position - hit.position);
@@ -152,7 +148,10 @@ vec3 Li_pathtracer(Ray& primary_ray)
 		float pdf;
 		vec3 wi, brdf;
 		brdf = mat.sample_wi(wi, hit.wo, hit.shading_normal, pdf);
-
+		if (pdf < 0.00001f)
+		{
+			return L;
+		}
 		float cosineterm = abs(dot(wi, hit.shading_normal));
 
 		pathThroughput = pathThroughput * (brdf * cosineterm) / pdf;
@@ -207,14 +206,12 @@ void tracePaths(const glm::mat4& V, const glm::mat4& P)
 	int num_rays = 0;
 	vector<vec4> local_image(rendered_image.width * rendered_image.height, vec4(0.0f));
 
-#pragma omp parallel for
+	#pragma omp parallel for
 	for(int y = 0; y < rendered_image.height; y++)
 	{
 		for(int x = 0; x < rendered_image.width; x++)
 		{
 			vec3 color;
-			Ray primaryRay;
-			primaryRay.o = camera_pos;
 			// Create a ray that starts in the camera position and points toward
 			// the current pixel on a virtual screen.
 			vec2 screenCoord = vec2(float(x) / float(rendered_image.width),
@@ -227,7 +224,7 @@ void tracePaths(const glm::mat4& V, const glm::mat4& P)
 			// Calculate direction
 			vec4 viewCoord = vec4(screenCoord.x * 2.0f - 1.0f, screenCoord.y * 2.0f - 1.0f, 1.0f, 1.0f);
 			vec3 p = homogenize(inverse(P * V) * viewCoord);
-			primaryRay.d = normalize(p - camera_pos);
+			Ray primaryRay(camera_pos, normalize(p - camera_pos));
 			// Intersect ray with scene
 			if(intersect(primaryRay))
 			{
