@@ -42,8 +42,10 @@ uint32_t pathtracer_result_txt_id;
 ///////////////////////////////////////////////////////////////////////////////
 // Camera parameters.
 ///////////////////////////////////////////////////////////////////////////////
-vec3 cameraPosition(-30.0f, 10.0f, 30.0f);
-vec3 cameraDirection = normalize(vec3(0.0f, 10.0f, 0.0f) - cameraPosition);
+vec3 cameraPosition(-30.0f, 10.0f, 30.0f); // Default
+vec3 cameraDirection = normalize(vec3(0.0f, 10.0f, 0.0f) - cameraPosition); // Default
+//vec3 cameraPosition(-30.0f, 5.0f, 0.0f); // Tetra
+//vec3 cameraDirection = normalize(vec3(1.0f, 5.0f, 1.0f) - cameraPosition); // Tetra
 vec3 worldUp(0.0f, 1.0f, 0.0f);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,10 +90,10 @@ void initialize()
 	///////////////////////////////////////////////////////////////////////////
 	// Load .obj models to scene
 	///////////////////////////////////////////////////////////////////////////
-	models.push_back(
-	    make_pair(labhelper::loadModelFromOBJ("../scenes/NewShip.obj"), translate(vec3(0.0f, 10.0f, 0.0f))));
-	models.push_back(make_pair(labhelper::loadModelFromOBJ("../scenes/landingpad2.obj"), mat4(1.0f)));
-	//models.push_back(make_pair(labhelper::loadModelFromOBJ("../scenes/tetra_balls.obj"), translate(vec3(10.f, 0.f, 0.f))));
+	//models.push_back(
+	//    make_pair(labhelper::loadModelFromOBJ("../scenes/NewShip.obj"), translate(vec3(0.0f, 10.0f, 0.0f))));
+	//models.push_back(make_pair(labhelper::loadModelFromOBJ("../scenes/landingpad2.obj"), mat4(1.0f)));
+	models.push_back(make_pair(labhelper::loadModelFromOBJ("../scenes/tetra_balls.obj"), translate(vec3(10.f, 0.f, 0.f))));
 	//models.push_back(make_pair(labhelper::loadModelFromOBJ("../scenes/BigSphere.obj"), mat4(1.0f)));
 
 	///////////////////////////////////////////////////////////////////////////

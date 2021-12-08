@@ -123,8 +123,11 @@ vec3 Li_pathtracer(Ray& primary_ray)
 		Intersection hit = getIntersection(currentRay);
 
 		// Create a Material tree
-		Diffuse diffuse(hit.material->m_color);
-		BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
+		DiffusePlus diffuse(hit.material->m_color, hit.position, hit.material->m_transparency);
+		//Diffuse diffuse(hit.material->m_color);
+		BlinnPhong dielectric_refract(hit.material->m_transparency, hit.material->m_fresnel, &diffuse);
+		BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &dielectric_refract);
+		//BlinnPhong dielectric(hit.material->m_transparency, hit.material->m_fresnel, &diffuse);
 		BlinnPhongMetal metal(hit.material->m_color, hit.material->m_shininess, hit.material->m_fresnel);
 		LinearBlend metal_blend(hit.material->m_metalness, &metal, &dielectric);
 		LinearBlend reflectivity_blend(hit.material->m_reflectivity, &metal_blend, &diffuse);
@@ -140,6 +143,12 @@ vec3 Li_pathtracer(Ray& primary_ray)
 			vec3 wi = normalize(point_light.position - hit.position);
 			L += pathThroughput * mat.f(wi, hit.wo, hit.shading_normal) * Li * std::max(0.0f, dot(wi, hit.shading_normal));
 		}
+
+		// Transparency
+		// TODO: Implement refraction and correct transparency.
+		//L += hit.material->m_transparency * Lenvironment(primary_ray.d);
+		//L += pathThroughput * hit.material->m_transparency * mat.f(Lenvironment(hit.position), hit.wo, hit.shading_normal);
+
 
 		// Add emitted radiance from intersection
 		L += pathThroughput * hit.material->m_emission * hit.material->m_color;
@@ -178,6 +187,7 @@ vec3 Li_pathtracer(Ray& primary_ray)
 		}
 		// Otherwise, reiterate for the new intersection
 	}
+
 	return L;
 }
 

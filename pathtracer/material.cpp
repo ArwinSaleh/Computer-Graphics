@@ -28,6 +28,26 @@ vec3 Diffuse::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
 	return f(wi, wo, n);
 }
 
+// Refraction Project
+vec3 DiffusePlus::f(const vec3& wi, const vec3& wo, const vec3& n)
+{
+	if (dot(wi, n) <= 0.0f)
+		return vec3(0.0f);
+	if (!sameHemisphere(wi, wo, n))
+		return vec3(0.0f);
+	return (1.0f / M_PI) * color;
+}
+
+vec3 DiffusePlus::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
+{
+	wi = transparency * normalize(-(2 * dot(n, position) * n - position));
+	if (dot(wi, n) <= 0.0f)
+		p = 0.0f;
+	else
+		p = max(0.0f, dot(n, wi)) / M_PI;
+	return f(wi, wo, n);
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // A Blinn Phong Dielectric Microfacet BRFD
 ///////////////////////////////////////////////////////////////////////////

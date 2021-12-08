@@ -34,6 +34,20 @@ public:
 	virtual vec3 sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p) override;
 };
 
+// Refraction Project
+class DiffusePlus : public BRDF
+{
+public:
+	vec3 color;
+	vec3 position;
+	float transparency;
+	DiffusePlus(vec3 c, vec3 pos, float t) : color(c), position(pos), transparency(t)
+	{
+	}
+	virtual vec3 f(const vec3& wi, const vec3& wo, const vec3& n) override;
+	virtual vec3 sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p) override;
+};
+
 ///////////////////////////////////////////////////////////////////////////
 // A Blinn Phong Dielectric Microfacet BRFD
 ///////////////////////////////////////////////////////////////////////////
