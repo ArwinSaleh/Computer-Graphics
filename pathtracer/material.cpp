@@ -31,21 +31,31 @@ vec3 Diffuse::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
 // Refraction Project
 vec3 DiffusePlus::f(const vec3& wi, const vec3& wo, const vec3& n)
 {
-	if (dot(wi, n) <= 0.0f)
-		return vec3(0.0f);
-	if (!sameHemisphere(wi, wo, n))
-		return vec3(0.0f);
-	return (1.0f / M_PI) * color;
+	return vec3(0.0f);
 }
 
 vec3 DiffusePlus::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
 {
-	wi = transparency * normalize(-(2 * dot(n, position) * n - position));
-	if (dot(wi, n) <= 0.0f)
-		p = 0.0f;
-	else
-		p = max(0.0f, dot(n, wi)) / M_PI;
-	return f(wi, wo, n);
+	p = 1.0f;
+
+	float cosi = clamp(-1.0f, 1.0f, dot(-wo, n));
+	float etai = 1.00f;
+	float etat = 1.52f;
+	vec3 n_tmp = n;
+	if (cosi < 0.0f) { cosi = -cosi; }
+	else { std::swap(etai, etat); n_tmp = -n; }
+	float eta = etai / etat;
+	float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
+
+	if (k < 0.0f) {
+		wi = reflect(-wo, n_tmp);
+	}
+	else {
+		//wi = eta * wo + (eta * cosi - sqrtf(k)) * n_tmp;
+		wi = refract(-wo, n_tmp, eta);
+	}
+	
+	return color;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -181,14 +191,14 @@ vec3 LinearBlend::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
 
 	if (randf() < w)
 	{
-		p *= w;
+		//p *= w;
 		vec3 brdf = bsdf0->sample_wi(wi, wo, n, p);
 
 		return brdf;
 	}
 	else
 	{
-		p *= (1.0f - w);
+		//p *= (1.0f - w);
 		vec3 brdf = bsdf1->sample_wi(wi, wo, n, p);
 
 		return brdf;

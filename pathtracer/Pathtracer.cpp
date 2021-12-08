@@ -123,15 +123,15 @@ vec3 Li_pathtracer(Ray& primary_ray)
 		Intersection hit = getIntersection(currentRay);
 
 		// Create a Material tree
-		DiffusePlus diffuse(hit.material->m_color, hit.position, hit.material->m_transparency);
-		//Diffuse diffuse(hit.material->m_color);
-		BlinnPhong dielectric_refract(hit.material->m_transparency, hit.material->m_fresnel, &diffuse);
-		BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &dielectric_refract);
-		//BlinnPhong dielectric(hit.material->m_transparency, hit.material->m_fresnel, &diffuse);
+		DiffusePlus refractive(hit.material->m_color);
+		Diffuse diffuse(hit.material->m_color);
+		BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
 		BlinnPhongMetal metal(hit.material->m_color, hit.material->m_shininess, hit.material->m_fresnel);
 		LinearBlend metal_blend(hit.material->m_metalness, &metal, &dielectric);
 		LinearBlend reflectivity_blend(hit.material->m_reflectivity, &metal_blend, &diffuse);
-		BRDF& mat = reflectivity_blend;
+		LinearBlend refractive_blend(hit.material->m_transparency, &refractive, &reflectivity_blend);
+
+		BRDF& mat = refractive_blend;
 
 		// Direct Illumination
 		Ray occlusionRay(hit.position + EPSILON * hit.geometry_normal, normalize(point_light.position - hit.position));
@@ -176,7 +176,16 @@ vec3 Li_pathtracer(Ray& primary_ray)
 		currentRay = newRay;
 
 		// Bias the ray slightly to avoid self-intersection
-		currentRay.o += EPSILON * hit.geometry_normal;
+		// Account for inner reflection
+		if (dot(wi, hit.geometry_normal) <= 0)
+		{
+			currentRay.o -= EPSILON * hit.geometry_normal;
+		}
+		else
+		{
+			currentRay.o += EPSILON * hit.geometry_normal;
+		}
+		
 
 		// Intersect the new ray and if there is no intersection just
 		// add environment contribution and finish
