@@ -35,11 +35,11 @@ public:
 };
 
 // Refraction Project
-class DiffusePlus : public BRDF
+class Refraction : public BRDF
 {
 public:
 	vec3 color;
-	DiffusePlus(vec3 c) : color(c)
+	Refraction(vec3 c) : color(c)
 	{
 	}
 	virtual vec3 f(const vec3& wi, const vec3& wo, const vec3& n) override;

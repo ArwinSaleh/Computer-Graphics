@@ -29,28 +29,32 @@ vec3 Diffuse::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
 }
 
 // Refraction Project
-vec3 DiffusePlus::f(const vec3& wi, const vec3& wo, const vec3& n)
+vec3 Refraction::f(const vec3& wi, const vec3& wo, const vec3& n)
 {
 	return vec3(0.0f);
 }
 
-vec3 DiffusePlus::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
+vec3 Refraction::sample_wi(vec3& wi, const vec3& wo, const vec3& n, float& p)
 {
 	p = 1.0f;
 
+	
 	float cosi = clamp(-1.0f, 1.0f, dot(-wo, n));
 	float etai = 1.00f;
 	float etat = 1.52f;
 	vec3 n_tmp = n;
 	if (cosi < 0.0f) { cosi = -cosi; }
-	else { std::swap(etai, etat); n_tmp = -n; }
+	else { std::swap(etai, etat); n_tmp = -n_tmp; }
 	float eta = etai / etat;
 	float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
+	
 
 	if (k < 0.0f) {
+		// Total inner reflection
 		wi = reflect(-wo, n_tmp);
 	}
 	else {
+		// Refraction
 		//wi = eta * wo + (eta * cosi - sqrtf(k)) * n_tmp;
 		wi = refract(-wo, n_tmp, eta);
 	}

@@ -123,15 +123,16 @@ vec3 Li_pathtracer(Ray& primary_ray)
 		Intersection hit = getIntersection(currentRay);
 
 		// Create a Material tree
-		DiffusePlus refractive(hit.material->m_color);
 		Diffuse diffuse(hit.material->m_color);
+		Refraction refractive(hit.material->m_color);
 		BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
 		BlinnPhongMetal metal(hit.material->m_color, hit.material->m_shininess, hit.material->m_fresnel);
 		LinearBlend metal_blend(hit.material->m_metalness, &metal, &dielectric);
 		LinearBlend reflectivity_blend(hit.material->m_reflectivity, &metal_blend, &diffuse);
-		LinearBlend refractive_blend(hit.material->m_transparency, &refractive, &reflectivity_blend);
+		LinearBlend refractive_blend(hit.material->m_transparency, &refractive, &diffuse);
+		LinearBlend final_blend(hit.material->m_fresnel, &reflectivity_blend, &refractive_blend);
 
-		BRDF& mat = refractive_blend;
+		BRDF& mat = final_blend;
 
 		// Direct Illumination
 		Ray occlusionRay(hit.position + EPSILON * hit.geometry_normal, normalize(point_light.position - hit.position));
@@ -143,12 +144,6 @@ vec3 Li_pathtracer(Ray& primary_ray)
 			vec3 wi = normalize(point_light.position - hit.position);
 			L += pathThroughput * mat.f(wi, hit.wo, hit.shading_normal) * Li * std::max(0.0f, dot(wi, hit.shading_normal));
 		}
-
-		// Transparency
-		// TODO: Implement refraction and correct transparency.
-		//L += hit.material->m_transparency * Lenvironment(primary_ray.d);
-		//L += pathThroughput * hit.material->m_transparency * mat.f(Lenvironment(hit.position), hit.wo, hit.shading_normal);
-
 
 		// Add emitted radiance from intersection
 		L += pathThroughput * hit.material->m_emission * hit.material->m_color;
@@ -177,7 +172,7 @@ vec3 Li_pathtracer(Ray& primary_ray)
 
 		// Bias the ray slightly to avoid self-intersection
 		// Account for inner reflection
-		if (dot(wi, hit.geometry_normal) <= 0)
+		if (dot(wi, hit.geometry_normal) < 0)
 		{
 			currentRay.o -= EPSILON * hit.geometry_normal;
 		}
