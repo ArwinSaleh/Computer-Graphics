@@ -1,9 +1,9 @@
 # Exported by Chalmers Graphics Group
 newmtl Material.001
 Kd 0.8 0.858824 0.917647
-Ks 1 1 1
+Ks 0.222 0.222 0.222
 Pm 1
-Ps 0.1
+Ps 1
 Pr 25000
 Ke 0 0 0
 Tf 1 1 1

@@ -125,14 +125,13 @@ vec3 Li_pathtracer(Ray& primary_ray)
 		// Create a Material tree
 		Diffuse diffuse(hit.material->m_color);
 		Refraction refractive(hit.material->m_color);
-		BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &diffuse);
+		LinearBlend refractive_blend(hit.material->m_transparency, &refractive, &diffuse);
+		BlinnPhong dielectric(hit.material->m_shininess, hit.material->m_fresnel, &refractive_blend);
 		BlinnPhongMetal metal(hit.material->m_color, hit.material->m_shininess, hit.material->m_fresnel);
 		LinearBlend metal_blend(hit.material->m_metalness, &metal, &dielectric);
-		LinearBlend reflectivity_blend(hit.material->m_reflectivity, &metal_blend, &diffuse);
-		LinearBlend refractive_blend(hit.material->m_transparency, &refractive, &diffuse);
-		LinearBlend final_blend(hit.material->m_fresnel, &reflectivity_blend, &refractive_blend);
-
-		BRDF& mat = final_blend;
+		LinearBlend reflectivity_blend(hit.material->m_reflectivity, &metal_blend, &refractive_blend);
+		
+		BRDF& mat = reflectivity_blend;
 
 		// Direct Illumination
 		Ray occlusionRay(hit.position + EPSILON * hit.geometry_normal, normalize(point_light.position - hit.position));
